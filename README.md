@@ -1,2 +1,3 @@
 # openbmclapi_rs
-OpenBmclApi server node Written in Rust
+
+openbmclapi client node Written in Rust
