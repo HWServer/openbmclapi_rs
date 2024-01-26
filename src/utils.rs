@@ -59,7 +59,7 @@ pub const SYNC_FILE_LIST_SCHEMA: &str = r#"
     "type": "array",
     "items": {
         "type": "record",
-        "name": "fileinfo",
+        "name": "SyncFile",
         "fields": [
             {"name": "path", "type": "string"},
             {"name": "hash", "type": "string"},
@@ -82,6 +82,13 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> apache_avro::AvroResult<Vec<Sync
     match &value {
         Value::Array(arr) => {
             println!("array len: {}", arr.len());
+            for i in 0..arr.len() {
+                let item = &arr[i];
+                let try_item = from_value::<SyncFile>(item);
+                if try_item.is_err() {
+                    println!("parse item error: {}", try_item.err().unwrap());
+                }
+            }
         }
         _ => {
             println!("not array");
@@ -93,7 +100,7 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> apache_avro::AvroResult<Vec<Sync
         panic!("parse file list error: ");
     }
     let files = files.unwrap();
-    Ok(files.files)
+    Ok(files.fileinfo)
 }
 
 #[test]
