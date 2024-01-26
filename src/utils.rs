@@ -1,6 +1,12 @@
+use crate::cluster::{SyncFile, SyncFileList};
+
+use std::io::Cursor;
+
 use md5::{Digest, Md5};
 use sha1::Sha1;
 use std::path::PathBuf;
+use apache_avro::{from_value, from_avro_datum};
+
 
 /// import {join} from 'path'
 ///
@@ -44,6 +50,40 @@ pub fn validate_file(buffer: &[u8], check_sum: &str) -> bool {
             result_str == check_sum
         }
     }
+}
+
+
+/// BYD avro 格式的文件列表
+pub const SYNC_FILE_LIST_SCHEMA: &str = r#"
+{
+    "type": "array",
+    "items": {
+      "type": "record",
+        "name": "fileinfo",
+      "fields": [
+        {"name": "path", "type": "string"},
+        {"name": "hash", "type": "string"},
+        {"name": "size", "type": "long"}
+      ]
+    }
+}
+"#;
+
+/// 用来将 BYD avro 格式的数据转换成文件列表
+pub fn avro_data_to_file_list(data: Vec<u8>) -> apache_avro::AvroResult<Vec<SyncFile>> {
+    let chema = apache_avro::Schema::parse_str(SYNC_FILE_LIST_SCHEMA).unwrap();
+    let mut cur = Cursor::new(data);
+    let reader = from_avro_datum(&chema, &mut cur, Some(&chema));
+    if reader.is_err() {
+        return Err(reader.err().unwrap());
+    }
+    let files = from_value::<SyncFileList>(&reader.unwrap());
+    if files.is_err() {
+        // return Err(files.err().unwrap());
+        panic!("parse file list error: {:?}", files.err());
+    }
+    let files = files.unwrap();
+    Ok(files.files)
 }
 
 #[test]

@@ -1,7 +1,22 @@
+use crate::utils::avro_data_to_file_list;
 use crate::config::{ClusterByoc, Config};
 use crate::PROTOCOL_VERSION;
 
 use reqwest::{Client, StatusCode};
+use serde::Deserialize;
+use zstd::stream::decode_all;
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct SyncFile {
+    pub path: String,
+    pub hash: String,
+    pub size: i64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct SyncFileList {
+    pub files: Vec<SyncFile>,
+}
 
 pub struct Cluster {
     pub config: Config,
@@ -40,7 +55,7 @@ impl Cluster {
     ///     files: FileListSchema.fromBuffer(Buffer.from(decompressed)),
     ///   }
     /// }
-    pub async fn get_file_list(&self) {
+    pub async fn get_file_list(&self) -> Vec<SyncFile> {
         // server: https://openbmclapi.bangbang93.com
         // path: /openbmclapi/files
         let url = format!(
@@ -57,22 +72,26 @@ impl Cluster {
             .basic_auth(username, Some(password))
             .timeout(std::time::Duration::from_secs(60))
             .send()
-            .await
-            .unwrap();
+            .await;
+        if res.is_err() {
+            panic!("get file list error: {:?}", res.err());
+        }
+        let res = res.unwrap();
         match res.status() {
             StatusCode::OK => {
                 let body = res.bytes().await.unwrap();
-                println!("get file list body! len: {}", body.len());
                 let cur = std::io::Cursor::new(body);
-                let data = zstd::decode_all(cur);
-                match data {
-                    Ok(data) => {
-                        println!("file list decompressed! len: {}", data.len());
-                    }
-                    Err(e) => {
-                        panic!("file list decompress faild e:{:?}", e)
-                    }
+                let raw_data = decode_all(cur);
+                if raw_data.is_err() {
+                    panic!("decompress file list error: {:?}", raw_data.err());
                 }
+                let raw_data = raw_data.unwrap();
+                let file_list = avro_data_to_file_list(raw_data);
+                if file_list.is_err() {
+                    panic!("parse file list error: {:?}", file_list.err());
+                }
+                let file_list = file_list.unwrap();
+                file_list
             }
             _ => {
                 panic!("error status: {:?}", res.status());
@@ -85,7 +104,6 @@ impl Cluster {
 mod tests {
     use super::*;
 
-    use serde::Deserialize;
     #[derive(Deserialize)]
     struct TestConfig {
         pub cluster_port: u32,
