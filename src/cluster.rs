@@ -1,5 +1,5 @@
-use crate::utils::avro_data_to_file_list;
 use crate::config::{ClusterByoc, Config};
+use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
 use reqwest::{Client, StatusCode};

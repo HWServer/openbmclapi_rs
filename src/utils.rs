@@ -2,11 +2,10 @@ use crate::cluster::{SyncFile, SyncFileList};
 
 use std::io::Cursor;
 
+use apache_avro::{from_avro_datum, from_value, types::Value};
 use md5::{Digest, Md5};
 use sha1::Sha1;
 use std::path::PathBuf;
-use apache_avro::{from_avro_datum, from_value, types::Value};
-
 
 /// import {join} from 'path'
 ///
@@ -51,7 +50,6 @@ pub fn validate_file(buffer: &[u8], check_sum: &str) -> bool {
         }
     }
 }
-
 
 /// BYD avro 格式的文件列表
 pub const SYNC_FILE_LIST_SCHEMA: &str = r#"
