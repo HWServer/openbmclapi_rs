@@ -5,7 +5,7 @@ use std::io::Cursor;
 use md5::{Digest, Md5};
 use sha1::Sha1;
 use std::path::PathBuf;
-use apache_avro::{from_value, from_avro_datum};
+use apache_avro::{from_avro_datum, from_value, types::Value};
 
 
 /// import {join} from 'path'
@@ -58,13 +58,13 @@ pub const SYNC_FILE_LIST_SCHEMA: &str = r#"
 {
     "type": "array",
     "items": {
-      "type": "record",
+        "type": "record",
         "name": "fileinfo",
-      "fields": [
-        {"name": "path", "type": "string"},
-        {"name": "hash", "type": "string"},
-        {"name": "size", "type": "long"}
-      ]
+        "fields": [
+            {"name": "path", "type": "string"},
+            {"name": "hash", "type": "string"},
+            {"name": "size", "type": "long"}
+        ]
     }
 }
 "#;
@@ -77,10 +77,20 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> apache_avro::AvroResult<Vec<Sync
     if reader.is_err() {
         return Err(reader.err().unwrap());
     }
-    let files = from_value::<SyncFileList>(&reader.unwrap());
+    let value = reader.unwrap();
+    println!("{:?}", value.validate(&chema));
+    match &value {
+        Value::Array(arr) => {
+            println!("array len: {}", arr.len());
+        }
+        _ => {
+            println!("not array");
+        }
+    }
+    let files = from_value::<SyncFileList>(&value);
     if files.is_err() {
         // return Err(files.err().unwrap());
-        panic!("parse file list error: {:?}", files.err());
+        panic!("parse file list error: ");
     }
     let files = files.unwrap();
     Ok(files.files)
