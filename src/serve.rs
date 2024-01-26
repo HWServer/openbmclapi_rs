@@ -1,4 +1,9 @@
-use axum::{extract::Path, http::header::HeaderMap, http::StatusCode, response::Response};
+use axum::{
+    extract::Path,
+    http::header::HeaderMap,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
 /// ```ts
 /// import express from 'express'
@@ -22,7 +27,7 @@ use axum::{extract::Path, http::header::HeaderMap, http::StatusCode, response::R
 ///
 /// export default MeasureRoute
 /// ```
-async fn measure(header: HeaderMap, Path(size): Path<u32>) -> Response<Vec<u8>> {
+pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> Response<Vec<u8>> {
     let mut data: Vec<u8> = Vec::new();
     match header.get("x-openbmclapi-secret") {
         Some(secret) => {
@@ -53,4 +58,9 @@ async fn measure(header: HeaderMap, Path(size): Path<u32>) -> Response<Vec<u8>> 
             .body(data)
             .unwrap(),
     }
+}
+
+/// 返回文件的请求函数
+pub async fn get_file() -> impl IntoResponse {
+    todo!();
 }

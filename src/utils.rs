@@ -1,5 +1,5 @@
 use md5::{Digest, Md5};
-use sha1::{Digest as Sha1Digest, Sha1};
+use sha1::Sha1;
 use std::path::PathBuf;
 
 /// import {join} from 'path'
