@@ -1,9 +1,9 @@
+use md5::{Digest, Md5};
+use sha1::{Digest as Sha1Digest, Sha1};
 use std::path::PathBuf;
-use md5::{Md5, Digest};
-use sha1::{Sha1, Digest as Sha1Digest};
 
 /// import {join} from 'path'
-/// 
+///
 /// export function hashToFilename(hash: string): string {
 ///     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
 ///     return join(hash.substring(0, 2), hash)
@@ -16,7 +16,7 @@ pub fn hash_to_filename(hash: &str) -> PathBuf {
 }
 
 /// import {createHash, Hash} from 'crypto'
-/// 
+///
 /// export function validateFile(buffer: Buffer, checkSum: string): boolean {
 ///     let hash: Hash
 ///     if (checkSum.length === 32) {
@@ -35,7 +35,7 @@ pub fn validate_file(buffer: &[u8], check_sum: &str) -> bool {
             let result = hasher.finalize();
             let result_str = format!("{:x}", result);
             result_str == check_sum
-        },
+        }
         _ => {
             let mut hasher = Sha1::new();
             hasher.update(buffer);
@@ -48,11 +48,20 @@ pub fn validate_file(buffer: &[u8], check_sum: &str) -> bool {
 
 #[test]
 fn test_hash_to_filename() {
-    assert_eq!(hash_to_filename("1234567890abcdef"), PathBuf::from("12/1234567890abcdef"));
+    assert_eq!(
+        hash_to_filename("1234567890abcdef"),
+        PathBuf::from("12/1234567890abcdef")
+    );
 }
 
 #[test]
 fn test_validate_file() {
-    assert_eq!(validate_file(b"hello", "5d41402abc4b2a76b9719d911017c592"), true);
-    assert_eq!(validate_file(b"hello", "5d41402abc4b2a76b9719d911017c593"), false);
+    assert_eq!(
+        validate_file(b"hello", "5d41402abc4b2a76b9719d911017c592"),
+        true
+    );
+    assert_eq!(
+        validate_file(b"hello", "5d41402abc4b2a76b9719d911017c593"),
+        false
+    );
 }

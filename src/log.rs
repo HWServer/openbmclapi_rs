@@ -1,4 +1,1 @@
-
-pub fn init_logging() {
-    
-}
+pub fn init_logging() {}
