@@ -17,6 +17,8 @@ pub struct Config {
     pub disable_access_log: bool,
     /// FORCE_NOOPEN
     pub force_noopen: bool,
+    /// ENABLE_NGINX
+    pub enable_nginx: bool,
 }
 
 impl Config {
@@ -50,6 +52,10 @@ impl Config {
             .unwrap_or_else(|_| "false".to_string())
             .parse::<bool>()
             .expect("FORCE_NOOPEN must be true or false");
+        let enable_nginx = std::env::var("ENABLE_NGINX")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse::<bool>()
+            .expect("ENABLE_NGINX must be true or false");
         Self {
             cluster_port,
             cluster_id,
@@ -58,6 +64,7 @@ impl Config {
             no_demaon,
             disable_access_log,
             force_noopen,
+            enable_nginx,
         }
     }
 }
