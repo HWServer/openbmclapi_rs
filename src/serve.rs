@@ -1,4 +1,4 @@
-use axum::{extract::Path, http::header::HeaderMap, http::StatusCode, response::IntoResponse};
+use axum::{extract::Path, http::header::HeaderMap, http::StatusCode, response::Response};
 
 /// ```ts
 /// import express from 'express'
@@ -22,22 +22,35 @@ use axum::{extract::Path, http::header::HeaderMap, http::StatusCode, response::I
 ///
 /// export default MeasureRoute
 /// ```
-async fn measure(header: HeaderMap, Path(size): Path<u32>) -> impl IntoResponse {
+async fn measure(header: HeaderMap, Path(size): Path<u32>) -> Response<Vec<u8>> {
+    let mut data: Vec<u8> = Vec::new();
     match header.get("x-openbmclapi-secret") {
         Some(secret) => {
             if secret != "secret" {
-                return (StatusCode::FORBIDDEN, Vec::new());
+                return Response::builder()
+                    .status(StatusCode::FORBIDDEN)
+                    .body(data)
+                    .unwrap();
             }
             if size > 200 {
-                return (StatusCode::BAD_REQUEST, Vec::new());
+                return Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .body(data)
+                    .unwrap();
             }
             let buffer: Vec<u8> = vec![0x00, 0x66, 0xcc, 0xff];
-            let mut response: Vec<u8> = Vec::new();
             for _ in 0..size {
-                response.extend(&buffer);
+                data.extend(&buffer);
             }
-            return (StatusCode::OK, response);
+            // return (StatusCode::OK, response);
+            return Response::builder()
+                .status(StatusCode::OK)
+                .body(data)
+                .unwrap();
         }
-        None => return (StatusCode::FORBIDDEN, Vec::new()),
+        None => Response::builder()
+            .status(StatusCode::FORBIDDEN)
+            .body(data)
+            .unwrap(),
     }
 }
