@@ -86,12 +86,7 @@ impl Cluster {
                     panic!("decompress file list error: {:?}", raw_data.err());
                 }
                 let raw_data = raw_data.unwrap();
-                let file_list = avro_data_to_file_list(raw_data);
-                if file_list.is_err() {
-                    panic!("parse file list error: {:?}", file_list.err());
-                }
-                let file_list = file_list.unwrap();
-                file_list
+                avro_data_to_file_list(raw_data)
             }
             _ => {
                 panic!("error status: {:?}", res.status());

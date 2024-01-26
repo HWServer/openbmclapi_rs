@@ -70,12 +70,12 @@ pub const SYNC_FILE_LIST_SCHEMA: &str = r#"
 "#;
 
 /// 用来将 BYD avro 格式的数据转换成文件列表
-pub fn avro_data_to_file_list(data: Vec<u8>) -> apache_avro::AvroResult<Vec<SyncFile>> {
+pub fn avro_data_to_file_list(data: Vec<u8>) -> Vec<SyncFile> {
     let chema = apache_avro::Schema::parse_str(SYNC_FILE_LIST_SCHEMA).unwrap();
     let mut cur = Cursor::new(data);
     let reader = from_avro_datum(&chema, &mut cur, Some(&chema));
     if reader.is_err() {
-        return Err(reader.err().unwrap());
+        panic!("parse avro data error: {:?}", reader.err());
     }
     let value = reader.unwrap();
     match &value {
@@ -86,7 +86,7 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> apache_avro::AvroResult<Vec<Sync
                 let try_item = from_value::<SyncFile>(item).unwrap();
                 files.push(try_item);
             }
-            Ok(files)
+            files
         }
         _ => {
             panic!("invalid avro data, expect array")
