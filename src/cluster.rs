@@ -7,7 +7,6 @@ use serde::Deserialize;
 use zstd::stream::decode_all;
 
 #[derive(Deserialize, Debug, Clone)]
-#[serde(rename = "fileinfo")]
 pub struct SyncFile {
     pub path: String,
     pub hash: String,
@@ -16,7 +15,7 @@ pub struct SyncFile {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct SyncFileList {
-    pub fileinfo: Vec<SyncFile>,
+    pub file: Vec<SyncFile>,
 }
 
 pub struct Cluster {
