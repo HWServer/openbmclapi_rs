@@ -13,7 +13,7 @@ pub struct Config {
     pub cluster_id: String,
     /// CLUSTER_SECRET
     pub cluster_secret: String,
-    /// CLUSTER_BYOC
+    /// NO_DEMAON
     pub no_demaon: bool,
     // DISABLE_ACCESS_LOG
     // pub disable_access_log: bool,
