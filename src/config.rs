@@ -39,6 +39,7 @@ impl Config {
         cluster_secret: String,
         no_demaon: bool,
     ) -> Self {
+        // https://openbmclapi.bangbang93.com
         Self {
             center_url,
             host_ip,
