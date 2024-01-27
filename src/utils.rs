@@ -1,12 +1,12 @@
-use crate::cluster::{SyncFile};
+use crate::cluster::SyncFile;
 
 use std::io::Cursor;
 
-use log::{info, warn};
-use std::path::PathBuf;
 use apache_avro::{from_avro_datum, from_value, types::Value};
+use log::{info, warn};
 use md5::{Digest, Md5};
 use sha1::Sha1;
+use std::path::PathBuf;
 
 /// import {join} from 'path'
 ///
@@ -92,6 +92,7 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
                 }
                 files.push(try_item.unwrap());
             }
+            info!("parsed {} files", len);
             Some(files)
         }
         _ => {
@@ -99,6 +100,16 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
             None
         }
     }
+}
+
+#[macro_export]
+macro_rules! fatal {
+    ($($arg:tt)+) => {
+        use log::error;
+        // error!() + panic!()
+        error!($($arg)+);
+        panic!($($arg)+);
+    };
 }
 
 #[test]

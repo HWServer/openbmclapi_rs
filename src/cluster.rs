@@ -1,4 +1,4 @@
-use crate::config::{Config};
+use crate::config::Config;
 use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
@@ -63,7 +63,11 @@ impl Cluster {
         let url = self.config.join_center_url("/openbmclapi/files");
         let password = self.config.cluster_secret.clone();
         let username = self.config.cluster_id.clone();
-        let client = Client::builder().user_agent(self.ua.clone()).build().unwrap();
+        let client = Client::builder()
+            .user_agent(self.ua.clone())
+            .build()
+            .unwrap();
+        info!("getting file list from: {}", url);
         let res = client
             .get(url)
             .basic_auth(username, Some(password))
@@ -78,6 +82,7 @@ impl Cluster {
         match res.status() {
             StatusCode::OK => {
                 let body = res.bytes().await.unwrap();
+                info!("got file list len: {}, decompressing", body.len());
                 let cur = std::io::Cursor::new(body);
                 let raw_data = decode_all(cur);
                 if raw_data.is_err() {
@@ -117,12 +122,13 @@ mod tests {
             test_conf.cluster_port,
             test_conf.cluster_id,
             test_conf.cluster_secret,
-            false,
+            None,
         )
     }
 
     #[tokio::test]
     async fn test_get_file_list() {
+        crate::log::init_log_with_cli();
         let config = gen_config();
         let cluster = Cluster::new(config);
         cluster.get_file_list().await.unwrap();

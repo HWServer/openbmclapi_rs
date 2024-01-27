@@ -6,4 +6,6 @@ mod utils;
 
 pub const PROTOCOL_VERSION: &str = "1.6.11";
 
-fn main() {}
+fn main() {
+    log::init_log_with_cli();
+}

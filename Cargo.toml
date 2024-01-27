@@ -27,6 +27,7 @@ sha1 = "0.10.6"
 zstd = "0.13.0"
 
 log = "0.4.20"
+simple_logger = "4.3.3"
 # [dependencies.db_logger]
 # version = "0.1"
 # optional = true
