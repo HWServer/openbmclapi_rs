@@ -107,13 +107,12 @@ mod tests {
     }
 
     fn gen_config() -> Config {
-        let center_url = "openbmclapi.bangbang93.com".to_string();
         // 读取 config.toml 获得
         let raw_config = std::fs::read_to_string("config.toml").unwrap();
         let test_conf: TestConfig = toml::from_str(raw_config.as_str()).unwrap();
 
         Config::new(
-            center_url,
+            None,
             "".to_string(),
             test_conf.cluster_port,
             test_conf.cluster_id,

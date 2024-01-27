@@ -27,7 +27,7 @@ pub struct Config {
 
 impl Config {
     pub fn new(
-        center_url: String,
+        center_url: Option<String>,
         host_ip: String,
         host_port: u32,
         cluster_id: String,
@@ -36,7 +36,7 @@ impl Config {
     ) -> Self {
         // https://openbmclapi.bangbang93.com
         Self {
-            center_url,
+            center_url: center_url.unwrap_or("https://openbmclapi.bangbang93.com".to_string()),
             host_ip,
             host_port,
             cluster_id,
