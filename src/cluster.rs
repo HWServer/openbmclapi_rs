@@ -125,6 +125,6 @@ mod tests {
     async fn test_get_file_list() {
         let config = gen_config();
         let cluster = Cluster::new(config);
-        cluster.get_file_list().await;
+        cluster.get_file_list().await.unwrap();
     }
 }
