@@ -1,11 +1,11 @@
-use log::{debug, error, info, warn};
+use {
+    log::{error, warn},
+    serde::{Deserialize, Serialize},
+    serde_json::Result,
+    std::{env, fs, io::Error},
+};
 
-use serde::{Deserialize, Serialize};
-use serde_json::Result;
-
-use std::{env, fs, io::Error};
-
-const CONFIG_PATH: &str = "config.json";
+const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Config {
@@ -59,33 +59,23 @@ impl Config {
             .parse::<u32>()
             .unwrap_or_else(|_| {
                 error!("CLUSTER_PORT must be a number");
-                std::process::exit(1);
+                panic!();
             });
         let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|_| {
             error!("CLUSTER_ID must be set");
-            std::process::exit(1);
+            panic!();
         });
         let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|_| {
             error!("CLUSTER_SECRET must be set");
-            std::process::exit(1);
+            panic!();
         });
         let no_demaon = env::var("NO_DAEMON")
             .unwrap_or("false".to_string())
             .parse::<bool>()
             .unwrap_or_else(|_| {
                 error!("NO_DAEMON must be true or false");
-                std::process::exit(1);
+                panic!();
             });
-
-        // Create config
-        let config = Config::new(
-            center_url,
-            host_ip,
-            host_port,
-            cluster_id,
-            cluster_secret,
-            no_demaon,
-        );
 
         // Decrapated warning
         if env::var("CLUSTER_BYOC").is_ok() {
@@ -102,19 +92,29 @@ impl Config {
             // If you want to use Nginx, why would you choose this program?
         }
 
+        // Create config
+        let config = Config::new(
+            center_url,
+            host_ip,
+            host_port,
+            cluster_id,
+            cluster_secret,
+            no_demaon,
+        );
+
         // Save config
-        Self::save(config);
+        config.save();
     }
-    pub fn save(config: Config) {
-        if ! fs::canonicalize(CONFIG_PATH).is_ok() {
+    pub fn save(&self) {
+        if !fs::canonicalize(CONFIG_PATH).is_ok() {
             fs::File::create(CONFIG_PATH).unwrap_or_else(|_| {
                 error!("Failed to create config file");
-                std::process::exit(1);
+                panic!();
             });
         }
-        fs::write(CONFIG_PATH, serde_json::to_string(&config).unwrap()).unwrap_or_else(|_| {
+        fs::write(CONFIG_PATH, toml::to_string(&self).unwrap()).unwrap_or_else(|_| {
             error!("Failed to save config");
-            std::process::exit(1);
+            panic!();
         });
     }
 
