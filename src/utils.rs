@@ -1,11 +1,12 @@
-use crate::cluster::{SyncFile, SyncFileList};
+use crate::cluster::{SyncFile};
 
 use std::io::Cursor;
 
+use log::{info, warn};
+use std::path::PathBuf;
 use apache_avro::{from_avro_datum, from_value, types::Value};
 use md5::{Digest, Md5};
 use sha1::Sha1;
-use std::path::PathBuf;
 
 /// import {join} from 'path'
 ///
@@ -68,26 +69,34 @@ pub const SYNC_FILE_LIST_SCHEMA: &str = r#"
 "#;
 
 /// 用来将 BYD avro 格式的数据转换成文件列表
-pub fn avro_data_to_file_list(data: Vec<u8>) -> Vec<SyncFile> {
+pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
     let chema = apache_avro::Schema::parse_str(SYNC_FILE_LIST_SCHEMA).unwrap();
     let mut cur = Cursor::new(data);
     let reader = from_avro_datum(&chema, &mut cur, Some(&chema));
     if reader.is_err() {
-        panic!("parse avro data error: {:?}", reader.err());
+        warn!("parse avro data error: {:?}", reader.err());
+        return None;
     }
     let value = reader.unwrap();
     match &value {
         Value::Array(arr) => {
-            let mut files = Vec::with_capacity(arr.len());
-            for i in 0..arr.len() {
+            let len = arr.len();
+            let mut files = Vec::with_capacity(len);
+            info!("got {} files, parsing", len);
+            for i in 0..len {
                 let item = &arr[i];
-                let try_item = from_value::<SyncFile>(item).unwrap();
-                files.push(try_item);
+                let try_item = from_value::<SyncFile>(item);
+                if try_item.is_err() {
+                    warn!("parse file error: {:?}", try_item.err());
+                    continue;
+                }
+                files.push(try_item.unwrap());
             }
-            files
+            Some(files)
         }
         _ => {
-            panic!("invalid avro data, expect array")
+            warn!("file list avro data execpet a array, got a {:?}", value);
+            None
         }
     }
 }

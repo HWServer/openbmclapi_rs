@@ -2,6 +2,7 @@ use crate::config::{ClusterByoc, Config};
 use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
+use log::{info, warn};
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use zstd::stream::decode_all;
@@ -13,16 +14,17 @@ pub struct SyncFile {
     pub size: i64,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct SyncFileList {
-    pub file: Vec<SyncFile>,
-}
-
 pub struct Cluster {
     pub config: Config,
+    pub ua: String,
 }
 
 impl Cluster {
+    pub fn new(config: Config) -> Self {
+        let ua = format!("openbmclapi-cluster/{}", PROTOCOL_VERSION);
+        Self { config, ua }
+    }
+
     ///     this.ua = `openbmclapi-cluster/${version}`
     /// this.got = got.extend({
     ///     prefixUrl: this.prefixUrl,
@@ -55,7 +57,7 @@ impl Cluster {
     ///     files: FileListSchema.fromBuffer(Buffer.from(decompressed)),
     ///   }
     /// }
-    pub async fn get_file_list(&self) -> Vec<SyncFile> {
+    pub async fn get_file_list(&self) -> Option<Vec<SyncFile>> {
         // server: https://openbmclapi.bangbang93.com
         // path: /openbmclapi/files
         let url = format!(
@@ -63,10 +65,9 @@ impl Cluster {
             self.config.cluster_byoc.to_string(),
             self.config.center_url.clone()
         );
-        let ua = format!("openbmclapi-cluster/{}", PROTOCOL_VERSION);
         let password = self.config.cluster_secret.clone();
-        let username = self.config.cluster_id.to_string();
-        let client = Client::builder().user_agent(ua).build().unwrap();
+        let username = self.config.cluster_id.clone();
+        let client = Client::builder().user_agent(self.ua.clone()).build().unwrap();
         let res = client
             .get(url)
             .basic_auth(username, Some(password))
@@ -74,7 +75,8 @@ impl Cluster {
             .send()
             .await;
         if res.is_err() {
-            panic!("get file list error: {:?}", res.err());
+            warn!("get file list error: {:?}", res.err());
+            return None;
         }
         let res = res.unwrap();
         match res.status() {
@@ -83,13 +85,15 @@ impl Cluster {
                 let cur = std::io::Cursor::new(body);
                 let raw_data = decode_all(cur);
                 if raw_data.is_err() {
-                    panic!("decompress file list error: {:?}", raw_data.err());
+                    warn!("decompress file list error: {:?}", raw_data.err());
+                    return None;
                 }
                 let raw_data = raw_data.unwrap();
                 avro_data_to_file_list(raw_data)
             }
             _ => {
-                panic!("error status: {:?}", res.status());
+                warn!("faild to get file list, net status: {:?}", res.status());
+                None
             }
         }
     }
@@ -133,7 +137,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_file_list() {
         let config = gen_config();
-        let cluster = Cluster { config };
+        let cluster = Cluster::new(config);
         cluster.get_file_list().await;
     }
 }
