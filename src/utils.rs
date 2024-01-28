@@ -102,6 +102,17 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
     }
 }
 
+
+/// FATAL 级 Log
+/// 这个宏会输出一条 error 级的日志, 并且 panic!
+/// 这个宏应当接收两个参数, 分别定义为 arg1 和 arg2, 其应当均为 String 类型
+/// 其中, arg1 会传给 error!() 宏，而 arg2 会传给 panic!() 宏
+/// 例如:
+///    fatal!("error", "something wrong");
+/// 此时，展开的宏代码应当是
+///    error!("error");
+///    panic!("something wrong");
+
 #[macro_export]
 macro_rules! fatal {
     ($($arg:tt)+) => {

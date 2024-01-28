@@ -62,12 +62,12 @@ impl Config {
         let no_demaon = env::var("NO_DAEMON").unwrap().parse::<bool>().ok();
         let cache_dir = env::var("CACHE_DIR").ok().map(|x| PathBuf::from(x));
 
-        // Load from env
-        let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|_| {
-            fatal!("CLUSTER_ID must be set");
+        let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|err| {
+            todo!("Not implemented yet");
         });
-        let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|_| {
-            fatal!("CLUSTER_SECRET must be set");
+
+        let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|err| {
+            todo!("Not implemented yet");
         });
 
         // Decrapated warning
@@ -99,16 +99,28 @@ impl Config {
         // Save config
         config.save();
     }
+    
     pub fn save(&self) {
         if !fs::canonicalize(CONFIG_PATH).is_ok() {
             fs::File::create(CONFIG_PATH).unwrap_or_else(|err| {
-                fatal!("Failed to create config file");
+                todo!("Not implemented yet");
             });
             //TODO: Trigger initialization
         }
         fs::write(CONFIG_PATH, toml::to_string(&self).unwrap()).unwrap_or_else(|err| {
-            fatal!("Failed to save config file");
+            todo!("Not implemented yet");
         });
+    }
+
+
+    pub fn load() {
+        if fs::canonicalize(CONFIG_PATH).is_ok() {
+            let config: Config = toml::from_str(&fs::read_to_string(CONFIG_PATH).unwrap()).unwrap_or_else(|err| {
+                todo!("Not implemented yet");
+            });
+            info!("Config loaded");
+            info!("{:#?}", config);
+        }
     }
 
     pub fn join_center_url(&self, path: &str) -> String {
