@@ -1,15 +1,14 @@
 use {
     crate::fatal,
     log::{error, info, warn},
-    std::{env, fs},
-    serde::{Serialize, Deserialize}
+    serde::{Deserialize, Serialize},
+    std::{env, fs, path::PathBuf},
 };
 
 const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Config {
-    /// http or https
     /// CENTER_URL
     pub center_url: String,
     /// CLUSTER_IP
@@ -22,6 +21,8 @@ pub struct Config {
     pub cluster_secret: String,
     /// NO_DEMAON
     pub no_demaon: bool,
+    /// cache dir
+    pub cache_dir: PathBuf,
 }
 
 impl Config {
@@ -32,7 +33,16 @@ impl Config {
         cluster_id: String,
         cluster_secret: String,
         no_demaon: Option<bool>,
+        cache_dir: Option<PathBuf>,
     ) -> Self {
+        // cache dir 默认: cwd + 'cache'
+        let cache_dir = if let Some(cache_dir) = cache_dir {
+            cache_dir
+        } else {
+            env::current_dir()
+                .unwrap_or(PathBuf::from("."))
+                .join("cache")
+        };
         Self {
             center_url: center_url.unwrap_or("https://openbmclapi.bangbang93.com".to_string()),
             host_ip: host_ip.unwrap_or("0.0.0.0".to_string()),
@@ -40,6 +50,7 @@ impl Config {
             cluster_id,
             cluster_secret,
             no_demaon: no_demaon.unwrap_or(false),
+            cache_dir,
         }
     }
 
@@ -49,12 +60,13 @@ impl Config {
         let host_ip = env::var("CLUSTER_IP").ok();
         let host_port = env::var("CLUSTER_PORT").unwrap().parse::<u32>().ok();
         let no_demaon = env::var("NO_DAEMON").unwrap().parse::<bool>().ok();
+        let cache_dir = env::var("CACHE_DIR").ok().map(|x| PathBuf::from(x));
 
         // Load from env
-        let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|err| {
+        let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|_| {
             fatal!("CLUSTER_ID must be set");
         });
-        let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|err| {
+        let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|_| {
             fatal!("CLUSTER_SECRET must be set");
         });
 
@@ -81,6 +93,7 @@ impl Config {
             cluster_id,
             cluster_secret,
             no_demaon,
+            cache_dir,
         );
 
         // Save config

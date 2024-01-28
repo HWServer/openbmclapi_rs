@@ -1,7 +1,9 @@
+use crate::{config::Config, utils::hash_to_filename};
+
 use std::collections::HashMap;
 
 use axum::{
-    extract::{Path, Query},
+    extract::{Path, Query, State},
     http::header::HeaderMap,
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -10,7 +12,7 @@ use axum::{
 pub enum MeasureRes {
     Forbidden,
     BadResquest,
-    Data(Vec<u8>)
+    Data(Vec<u8>),
 }
 
 impl IntoResponse for MeasureRes {
@@ -18,7 +20,7 @@ impl IntoResponse for MeasureRes {
         match self {
             Self::Forbidden => (StatusCode::FORBIDDEN).into_response(),
             Self::BadResquest => (StatusCode::BAD_REQUEST).into_response(),
-            Self::Data(data) => (StatusCode::OK, data).into_response()
+            Self::Data(data) => (StatusCode::OK, data).into_response(),
         }
     }
 }
@@ -45,7 +47,6 @@ impl IntoResponse for MeasureRes {
 ///
 /// export default MeasureRoute
 /// ```
-/// 
 pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> MeasureRes {
     match header.get("x-openbmclapi-secret") {
         Some(secret) => {
@@ -60,12 +61,20 @@ pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> MeasureRes {
             data.fill(114_u8);
             return MeasureRes::Data(data);
         }
-        None => MeasureRes::Forbidden
+        None => MeasureRes::Forbidden,
     }
 }
 
 /// 返回文件的请求函数
 /// app.get('/download/:hash(\\w+)', async (req: Request, res: Response, next: NextFunction) => {
-pub async fn res_donwload(header: HeaderMap, Query(param): Query<HashMap<String, String>>, Path(hash): Path<String>) -> impl IntoResponse {
+pub async fn res_donwload(
+    State(config): State<Config>,
+    header: HeaderMap,
+    Query(param): Query<HashMap<String, String>>,
+    Path(hash): Path<String>,
+) -> impl IntoResponse {
+    let hash = hash.to_lowercase();
+    let file_path = config.cache_dir.join(hash_to_filename(&hash));
+    
     todo!();
 }

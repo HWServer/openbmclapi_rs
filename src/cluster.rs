@@ -123,6 +123,7 @@ mod tests {
             test_conf.cluster_id,
             test_conf.cluster_secret,
             None,
+            None,
         )
     }
 
