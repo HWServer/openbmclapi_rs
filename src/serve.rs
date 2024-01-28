@@ -25,6 +25,7 @@ impl IntoResponse for MeasureRes {
     }
 }
 
+/// 用于测速
 /// ```ts
 /// import express from 'express'
 ///
@@ -75,6 +76,16 @@ pub async fn res_donwload(
 ) -> impl IntoResponse {
     let hash = hash.to_lowercase();
     let file_path = config.cache_dir.join(hash_to_filename(&hash));
-    
+    let req_name = param.get("name");
+    let mut res = Response::builder().status(StatusCode::OK);
+    {
+        let mut header = res.headers_mut().unwrap();
+        header.insert("x-bmclapi-hash", hash.parse().unwrap());
+        if let Some(req_name) = req_name {
+            header.insert("Content-Disposition", req_name.parse().unwrap());
+            // Content-Type
+            header.insert("Content-Type", "application/octet-stream".parse().unwrap());
+        }
+    }
     todo!();
 }
