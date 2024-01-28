@@ -1,9 +1,27 @@
+use std::collections::HashMap;
+
 use axum::{
-    extract::Path,
+    extract::{Path, Query},
     http::header::HeaderMap,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+
+pub enum MeasureRes {
+    Forbidden,
+    BadResquest,
+    Data(Vec<u8>)
+}
+
+impl IntoResponse for MeasureRes {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Forbidden => (StatusCode::FORBIDDEN).into_response(),
+            Self::BadResquest => (StatusCode::BAD_REQUEST).into_response(),
+            Self::Data(data) => (StatusCode::OK, data).into_response()
+        }
+    }
+}
 
 /// ```ts
 /// import express from 'express'
@@ -27,40 +45,28 @@ use axum::{
 ///
 /// export default MeasureRoute
 /// ```
-pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> Response<Vec<u8>> {
+pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> MeasureRes {
     let mut data: Vec<u8> = Vec::new();
     match header.get("x-openbmclapi-secret") {
         Some(secret) => {
             if secret != "secret" {
-                return Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .body(data)
-                    .unwrap();
+                return MeasureRes::Forbidden;
             }
             if size > 200 {
-                return Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .body(data)
-                    .unwrap();
+                return MeasureRes::BadResquest;
             }
             let buffer: Vec<u8> = vec![0x00, 0x66, 0xcc, 0xff];
             for _ in 0..size {
                 data.extend(&buffer);
             }
-            // return (StatusCode::OK, response);
-            return Response::builder()
-                .status(StatusCode::OK)
-                .body(data)
-                .unwrap();
+            return MeasureRes::Data(data);
         }
-        None => Response::builder()
-            .status(StatusCode::FORBIDDEN)
-            .body(data)
-            .unwrap(),
+        None => MeasureRes::Forbidden
     }
 }
 
 /// 返回文件的请求函数
-pub async fn get_file() -> impl IntoResponse {
+/// app.get('/download/:hash(\\w+)', async (req: Request, res: Response, next: NextFunction) => {
+pub async fn res_donwload(header: HeaderMap, Query(param): Query<HashMap<String, String>>, Path(hash): Path<String>) -> impl IntoResponse {
     todo!();
 }
