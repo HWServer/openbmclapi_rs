@@ -45,8 +45,8 @@ impl IntoResponse for MeasureRes {
 ///
 /// export default MeasureRoute
 /// ```
+/// 
 pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> MeasureRes {
-    let mut data: Vec<u8> = Vec::new();
     match header.get("x-openbmclapi-secret") {
         Some(secret) => {
             if secret != "secret" {
@@ -55,10 +55,9 @@ pub async fn measure(header: HeaderMap, Path(size): Path<u32>) -> MeasureRes {
             if size > 200 {
                 return MeasureRes::BadResquest;
             }
-            let buffer: Vec<u8> = vec![0x00, 0x66, 0xcc, 0xff];
-            for _ in 0..size {
-                data.extend(&buffer);
-            }
+            // size -> size * mb
+            let mut data: Vec<u8> = Vec::with_capacity((size * 1024 * 1024) as usize);
+            data.fill(114_u8);
             return MeasureRes::Data(data);
         }
         None => MeasureRes::Forbidden

@@ -106,7 +106,7 @@ mod tests {
 
     #[derive(Deserialize)]
     struct TestConfig {
-        pub cluster_port: u32,
+        pub cluster_port: Option<u32>,
         pub cluster_id: String,
         pub cluster_secret: String,
     }
@@ -118,7 +118,7 @@ mod tests {
 
         Config::new(
             None,
-            "".to_string(),
+            None,
             test_conf.cluster_port,
             test_conf.cluster_id,
             test_conf.cluster_secret,

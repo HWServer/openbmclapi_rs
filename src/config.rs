@@ -2,6 +2,7 @@ use {
     crate::fatal,
     log::{error, info, warn},
     std::{env, fs},
+    serde::{Serialize, Deserialize}
 };
 
 const CONFIG_PATH: &str = "config.toml";
@@ -95,12 +96,6 @@ impl Config {
         fs::write(CONFIG_PATH, toml::to_string(&self).unwrap()).unwrap_or_else(|err| {
             fatal!("Failed to save config file");
         });
-    }
-
-    pub fn load() -> Result<Self> {
-        toml::from_str(&self.load_raw()?).map_err(|err| {
-            fatal!("Failed to parse config file");
-        })
     }
 
     pub fn join_center_url(&self, path: &str) -> String {
