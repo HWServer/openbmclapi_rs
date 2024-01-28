@@ -1,13 +1,17 @@
 use {
-    crate::fatal,
-    log::{error, info, warn},
+    core::panic,
+    log::{info, warn},
     serde::{Deserialize, Serialize},
-    std::{env, fs, path::PathBuf},
+    std::{
+        env, fs,
+        path::{Path, PathBuf},
+    },
 };
 
 const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+// TODO: 将除了 cluster_id, cluster_secret 之外的配置项可选化
 pub struct Config {
     /// CENTER_URL
     pub center_url: String,
@@ -99,7 +103,7 @@ impl Config {
         // Save config
         config.save();
     }
-    
+
     pub fn save(&self) {
         if !fs::canonicalize(CONFIG_PATH).is_ok() {
             fs::File::create(CONFIG_PATH).unwrap_or_else(|err| {
@@ -112,18 +116,46 @@ impl Config {
         });
     }
 
-
-    pub fn load() {
-        if fs::canonicalize(CONFIG_PATH).is_ok() {
-            let config: Config = toml::from_str(&fs::read_to_string(CONFIG_PATH).unwrap()).unwrap_or_else(|err| {
-                todo!("Not implemented yet");
-            });
+    pub fn load(&mut self) {
+        if Path::new(CONFIG_PATH).exists() {
+            let raw_data: Config = toml::from_str(&fs::read_to_string(CONFIG_PATH).unwrap())
+                .unwrap_or_else(|err| {
+                    panic!("Failed to load config: {}", err);
+                    // TODO: Replace this with fatal!()
+                });
+            self.center_url = raw_data.center_url;
+            self.host_ip = raw_data.host_ip;
+            self.host_port = raw_data.host_port;
+            self.cluster_id = raw_data.cluster_id;
+            self.cluster_secret = raw_data.cluster_secret;
+            self.no_demaon = raw_data.no_demaon;
+            self.cache_dir = raw_data.cache_dir;
             info!("Config loaded");
-            info!("{:#?}", config);
+        } else {
+            panic!("Failed to find config file");
+            // TODO: Replace this with fatal!()
         }
     }
 
     pub fn join_center_url(&self, path: &str) -> String {
         format!("{}{}", self.center_url, path)
     }
+}
+
+#[test]
+fn test_save_and_load_config() {
+    let config: Config = Config::new(Some("https://example.com".to_string()), Some("0.0.0.0".to_string()), Some(23333), "0066ccff".to_string(), "123456789".to_string(), Some(true), Some(PathBuf::from("cache")));
+    let mut test_config: Config = Config::new(None, None, None, "111".to_string(), "222".to_string(), None, None);
+    config.save();
+    test_config.load();
+    assert_eq!(test_config.center_url, "https://example.com");
+    assert_eq!(test_config.host_ip, "0.0.0.0");
+    assert_eq!(test_config.host_port, 23333);
+    assert_eq!(test_config.cluster_id, "0066ccff");
+    assert_eq!(test_config.cluster_secret, "123456789");
+    assert_eq!(test_config.no_demaon, true);
+    assert_eq!(test_config.cache_dir, PathBuf::from("cache"));
+
+    // Clean up the temporary config file
+    fs::remove_file(CONFIG_PATH).unwrap();
 }
