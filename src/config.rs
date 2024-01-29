@@ -121,6 +121,14 @@ impl Config {
         });
     }
 
+    /// 保存至文件
+    pub fn save_to_file(&self, path: &str) {
+        fs::write(path, toml::to_string(&self).unwrap()).unwrap_or_else(|err| {
+            fatal!(("Failed to save config: {}", err), ("{}", err));
+        });
+    }
+
+    /// 从文件加载
     pub fn update_from_config(&mut self) {
         if Path::new(CONFIG_PATH).exists() {
             let raw_data: Config = toml::from_str(&fs::read_to_string(CONFIG_PATH).unwrap())
@@ -140,6 +148,22 @@ impl Config {
         }
     }
 
+    /// 从文件加载
+    pub fn update_from_file(&mut self, path: &str) {
+        let raw_data: Config = toml::from_str(&fs::read_to_string(path).unwrap())
+            .unwrap_or_else(|err| {
+                fatal!(("Failed to load config: {}", err), ("{}", err));
+            });
+        self.center_url = raw_data.center_url;
+        self.host_ip = raw_data.host_ip;
+        self.host_port = raw_data.host_port;
+        self.cluster_id = raw_data.cluster_id;
+        self.cluster_secret = raw_data.cluster_secret;
+        self.no_demaon = raw_data.no_demaon;
+        self.cache_dir = raw_data.cache_dir;
+        info!("Config loaded");
+    }
+
     pub fn join_center_url(&self, path: &str) -> String {
         format!("{}{}", self.center_url, path)
     }
@@ -147,6 +171,7 @@ impl Config {
 
 #[test]
 fn test_save_and_load_config() {
+    let tmp_file = Path::new("tmp.toml");
     let config: Config = Config::new(
         Some("https://example.com".to_string()),
         "0.0.0.0".to_string(),
@@ -165,8 +190,8 @@ fn test_save_and_load_config() {
         None,
         None,
     );
-    config.save();
-    test_config.update_from_config();
+    config.save_to_file(tmp_file.to_str().unwrap());
+    test_config.update_from_file(tmp_file.to_str().unwrap());
     assert_eq!(test_config.center_url, "https://example.com");
     assert_eq!(test_config.host_ip, "0.0.0.0");
     assert_eq!(test_config.host_port, 23333);
@@ -176,5 +201,5 @@ fn test_save_and_load_config() {
     assert_eq!(test_config.cache_dir, PathBuf::from("cache"));
 
     // Clean up the temporary config file
-    fs::remove_file(CONFIG_PATH).unwrap();
+    fs::remove_file(tmp_file).unwrap();
 }

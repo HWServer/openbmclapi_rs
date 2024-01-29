@@ -29,7 +29,7 @@ zstd = "0.13.0"
 log = "0.4.20"
 [dependencies.simple_logger]
 version = "4.3.3"
-features = ["colors", "threads", "timestamps", "stderr"]
+features = ["colors", "threads", "timestamps"]
 # [dependencies.db_logger]
 # version = "0.1"
 # optional = true
