@@ -1,5 +1,5 @@
 use {
-    core::panic,
+    crate::fatal,
     log::{info, warn},
     serde::{Deserialize, Serialize},
     std::{
@@ -32,7 +32,7 @@ pub struct Config {
 impl Config {
     pub fn new(
         center_url: Option<String>,
-        host_ip: Option<String>,
+        host_ip: String,
         host_port: Option<u32>,
         cluster_id: String,
         cluster_secret: String,
@@ -49,7 +49,7 @@ impl Config {
         };
         Self {
             center_url: center_url.unwrap_or("https://openbmclapi.bangbang93.com".to_string()),
-            host_ip: host_ip.unwrap_or("0.0.0.0".to_string()),
+            host_ip,
             host_port: host_port.unwrap_or(8080),
             cluster_id,
             cluster_secret,
@@ -58,20 +58,24 @@ impl Config {
         }
     }
 
+    pub fn raw_new() {}
+
     pub fn convert_from_env() {
         // Load from env
         let center_url = env::var("CENTER_URL").ok();
-        let host_ip = env::var("CLUSTER_IP").ok();
+        let host_ip = env::var("CLUSTER_IP").unwrap_or_else(|_| {
+            fatal!("CLUSTER_IP is required");
+        });
         let host_port = env::var("CLUSTER_PORT").unwrap().parse::<u32>().ok();
         let no_demaon = env::var("NO_DAEMON").unwrap().parse::<bool>().ok();
         let cache_dir = env::var("CACHE_DIR").ok().map(|x| PathBuf::from(x));
 
-        let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|err| {
-            todo!("Not implemented yet");
+        let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|_| {
+            fatal!("CLUSTER_ID is required");
         });
 
-        let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|err| {
-            todo!("Not implemented yet");
+        let cluster_secret = env::var("CLUSTER_SECRET").unwrap_or_else(|_| {
+            fatal!("CLUSTER_SECRET is required");
         });
 
         // Decrapated warning
@@ -104,24 +108,24 @@ impl Config {
         config.save();
     }
 
+    /// 保存至文件
     pub fn save(&self) {
         if !fs::canonicalize(CONFIG_PATH).is_ok() {
             fs::File::create(CONFIG_PATH).unwrap_or_else(|err| {
-                todo!("Not implemented yet");
+                fatal!(("Failed to create config: {}", err), ("{}", err));
             });
             //TODO: Trigger initialization
         }
         fs::write(CONFIG_PATH, toml::to_string(&self).unwrap()).unwrap_or_else(|err| {
-            todo!("Not implemented yet");
+            fatal!(("Failed to save config: {}", err), ("{}", err));
         });
     }
 
-    pub fn load(&mut self) {
+    pub fn update_from_config(&mut self) {
         if Path::new(CONFIG_PATH).exists() {
             let raw_data: Config = toml::from_str(&fs::read_to_string(CONFIG_PATH).unwrap())
                 .unwrap_or_else(|err| {
-                    panic!("Failed to load config: {}", err);
-                    // TODO: Replace this with fatal!()
+                    fatal!(("Failed to load config: {}", err), ("{}", err));
                 });
             self.center_url = raw_data.center_url;
             self.host_ip = raw_data.host_ip;
@@ -132,8 +136,7 @@ impl Config {
             self.cache_dir = raw_data.cache_dir;
             info!("Config loaded");
         } else {
-            panic!("Failed to find config file");
-            // TODO: Replace this with fatal!()
+            fatal!("Config file {} not found", CONFIG_PATH);
         }
     }
 
@@ -144,10 +147,26 @@ impl Config {
 
 #[test]
 fn test_save_and_load_config() {
-    let config: Config = Config::new(Some("https://example.com".to_string()), Some("0.0.0.0".to_string()), Some(23333), "0066ccff".to_string(), "123456789".to_string(), Some(true), Some(PathBuf::from("cache")));
-    let mut test_config: Config = Config::new(None, None, None, "111".to_string(), "222".to_string(), None, None);
+    let config: Config = Config::new(
+        Some("https://example.com".to_string()),
+        "0.0.0.0".to_string(),
+        Some(23333),
+        "0066ccff".to_string(),
+        "123456789".to_string(),
+        Some(true),
+        Some(PathBuf::from("cache")),
+    );
+    let mut test_config: Config = Config::new(
+        None,
+        "0.0.0.0".to_string(),
+        None,
+        "111".to_string(),
+        "222".to_string(),
+        None,
+        None,
+    );
     config.save();
-    test_config.load();
+    test_config.update_from_config();
     assert_eq!(test_config.center_url, "https://example.com");
     assert_eq!(test_config.host_ip, "0.0.0.0");
     assert_eq!(test_config.host_port, 23333);

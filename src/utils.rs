@@ -102,7 +102,6 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
     }
 }
 
-
 /// FATAL 级 Log
 /// 这个宏会输出一条 error 级的日志, 并且 panic!
 /// 这个宏应当接收两个参数, 分别定义为 arg1 和 arg2, 其应当均为 String 类型
@@ -115,6 +114,12 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
 
 #[macro_export]
 macro_rules! fatal {
+    (($($arg1:tt)+), ($($arg2:tt)+)) => {
+        use log::error;
+        // error!() + panic!()
+        error!($($arg1)+);
+        panic!($($arg2)+);
+    };
     ($($arg:tt)+) => {
         use log::error;
         // error!() + panic!()

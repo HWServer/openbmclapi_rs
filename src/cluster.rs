@@ -118,7 +118,7 @@ mod tests {
 
         Config::new(
             None,
-            None,
+            "127.0.0.1".to_string(),
             test_conf.cluster_port,
             test_conf.cluster_id,
             test_conf.cluster_secret,
