@@ -127,6 +127,7 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "local_test")]
     #[tokio::test]
     async fn test_get_file_list() {
         crate::log::init_log_with_cli();
