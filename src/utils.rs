@@ -114,12 +114,14 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
 
 #[macro_export]
 macro_rules! fatal {
+    // 正常输入两组信息
     (($($arg1:tt)+), ($($arg2:tt)+)) => {
         use log::error;
         // error!() + panic!()
         error!($($arg1)+);
         panic!($($arg2)+);
     };
+    // 如果只输入了一组
     ($($arg:tt)+) => {
         use log::error;
         // error!() + panic!()
