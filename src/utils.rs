@@ -3,7 +3,7 @@ use crate::cluster::SyncFile;
 use std::io::Cursor;
 
 use apache_avro::{from_avro_datum, from_value, types::Value};
-use log::{info, warn};
+use tracing::{info, warn};
 use md5::{Digest, Md5};
 use sha1::Sha1;
 use std::path::PathBuf;
@@ -116,14 +116,14 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
 macro_rules! fatal {
     // 正常输入两组信息
     (($($arg1:tt)+), ($($arg2:tt)+)) => {
-        use log::error;
+        use tracing::error;
         // error!() + panic!()
         error!($($arg1)+);
         panic!($($arg2)+);
     };
     // 如果只输入了一组
     ($($arg:tt)+) => {
-        use log::error;
+        use tracing::error;
         // error!() + panic!()
         error!($($arg)+);
         panic!($($arg)+);

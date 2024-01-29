@@ -1,6 +1,6 @@
 use {
     crate::fatal,
-    log::{info, warn},
+    tracing::{info, warn},
     serde::{Deserialize, Serialize},
     std::{
         env, fs,

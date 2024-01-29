@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
-use log::{info, warn};
+use tracing::{info, instrument, warn};
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use zstd::stream::decode_all;
@@ -14,6 +14,7 @@ pub struct SyncFile {
     pub size: i64,
 }
 
+#[derive(Debug, Clone)]
 pub struct Cluster {
     pub config: Config,
     pub ua: String,
@@ -60,6 +61,7 @@ impl Cluster {
     pub async fn get_file_list(&self) -> Option<Vec<SyncFile>> {
         // server: https://openbmclapi.bangbang93.com
         // path: /openbmclapi/files
+        info!("initing");
         let url = self.config.join_center_url("/openbmclapi/files");
         let password = self.config.cluster_secret.clone();
         let username = self.config.cluster_id.clone();
