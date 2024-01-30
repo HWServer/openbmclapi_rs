@@ -1,5 +1,3 @@
-use tracing_subscriber::FmtSubscriber;
-
 pub fn init_log_with_cli() {
     // 命令行参数
     // --warn

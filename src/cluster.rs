@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
-use tracing::{info, instrument, warn};
+use tracing::{info, warn};
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use zstd::stream::decode_all;
@@ -126,6 +126,7 @@ mod tests {
             test_conf.cluster_secret,
             None,
             None,
+            None
         )
     }
 

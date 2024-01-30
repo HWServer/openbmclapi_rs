@@ -25,6 +25,9 @@ pub struct Config {
     pub cluster_secret: String,
     /// NO_DEMAON
     pub no_demaon: bool,
+    /// NO OPEN
+    /// 同步时是否使用 openbmclapi 还是使用 center 和 sync only
+    pub no_open: bool,
     /// cache dir
     pub cache_dir: PathBuf,
 }
@@ -38,6 +41,7 @@ impl Config {
         cluster_secret: String,
         no_demaon: Option<bool>,
         cache_dir: Option<PathBuf>,
+        no_open: Option<bool>,
     ) -> Self {
         // cache dir 默认: cwd + 'cache'
         let cache_dir = if let Some(cache_dir) = cache_dir {
@@ -55,6 +59,7 @@ impl Config {
             cluster_secret,
             no_demaon: no_demaon.unwrap_or(false),
             cache_dir,
+            no_open: no_open.unwrap_or(false),
         }
     }
 
@@ -69,6 +74,7 @@ impl Config {
         let host_port = env::var("CLUSTER_PORT").unwrap().parse::<u32>().ok();
         let no_demaon = env::var("NO_DAEMON").unwrap().parse::<bool>().ok();
         let cache_dir = env::var("CACHE_DIR").ok().map(|x| PathBuf::from(x));
+        let no_open = env::var("NO_OPEN").unwrap().parse::<bool>().ok();
 
         let cluster_id = env::var("CLUSTER_ID").unwrap_or_else(|_| {
             fatal!("CLUSTER_ID is required");
@@ -102,6 +108,7 @@ impl Config {
             cluster_secret,
             no_demaon,
             cache_dir,
+            no_open,
         );
 
         // Save config
@@ -129,26 +136,6 @@ impl Config {
     }
 
     /// 从文件加载
-    pub fn update_from_config(&mut self) {
-        if Path::new(CONFIG_PATH).exists() {
-            let raw_data: Config = toml::from_str(&fs::read_to_string(CONFIG_PATH).unwrap())
-                .unwrap_or_else(|err| {
-                    fatal!(("Failed to load config: {}", err), ("{}", err));
-                });
-            self.center_url = raw_data.center_url;
-            self.host_ip = raw_data.host_ip;
-            self.host_port = raw_data.host_port;
-            self.cluster_id = raw_data.cluster_id;
-            self.cluster_secret = raw_data.cluster_secret;
-            self.no_demaon = raw_data.no_demaon;
-            self.cache_dir = raw_data.cache_dir;
-            info!("Config loaded");
-        } else {
-            fatal!("Config file {} not found", CONFIG_PATH);
-        }
-    }
-
-    /// 从文件加载
     pub fn update_from_file(&mut self, path: &str) {
         let raw_data: Config = toml::from_str(&fs::read_to_string(path).unwrap())
             .unwrap_or_else(|err| {
@@ -161,7 +148,8 @@ impl Config {
         self.cluster_secret = raw_data.cluster_secret;
         self.no_demaon = raw_data.no_demaon;
         self.cache_dir = raw_data.cache_dir;
-        info!("Config loaded");
+        self.no_open = raw_data.no_open;
+        info!("Config loaded from {}", path);
     }
 
     pub fn join_center_url(&self, path: &str) -> String {
@@ -180,6 +168,7 @@ fn test_save_and_load_config() {
         "123456789".to_string(),
         Some(true),
         Some(PathBuf::from("cache")),
+        Some(true)
     );
     let mut test_config: Config = Config::new(
         None,
@@ -189,6 +178,7 @@ fn test_save_and_load_config() {
         "222".to_string(),
         None,
         None,
+        None
     );
     config.save_to_file(tmp_file.to_str().unwrap());
     test_config.update_from_file(tmp_file.to_str().unwrap());
@@ -199,6 +189,7 @@ fn test_save_and_load_config() {
     assert_eq!(test_config.cluster_secret, "123456789");
     assert_eq!(test_config.no_demaon, true);
     assert_eq!(test_config.cache_dir, PathBuf::from("cache"));
+    assert_eq!(test_config.no_open, true);
 
     // Clean up the temporary config file
     fs::remove_file(tmp_file).unwrap();

@@ -9,7 +9,6 @@ publish = false
 [features]
 default = ["local_test"]
 local_test = []
-# db_log = ["db_logger"]
 
 [dependencies]
 
