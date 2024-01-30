@@ -2,9 +2,9 @@ use crate::config::Config;
 use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
-use tracing::{info, warn};
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
+use tracing::{info, warn};
 use zstd::stream::decode_all;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -26,6 +26,7 @@ impl Cluster {
         Self { config, ua }
     }
 
+    /// ```typescript
     ///     this.ua = `openbmclapi-cluster/${version}`
     /// this.got = got.extend({
     ///     prefixUrl: this.prefixUrl,
@@ -58,6 +59,7 @@ impl Cluster {
     ///     files: FileListSchema.fromBuffer(Buffer.from(decompressed)),
     ///   }
     /// }
+    /// ```
     pub async fn get_file_list(&self) -> Option<Vec<SyncFile>> {
         // server: https://openbmclapi.bangbang93.com
         // path: /openbmclapi/files
@@ -126,7 +128,7 @@ mod tests {
             test_conf.cluster_secret,
             None,
             None,
-            None
+            None,
         )
     }
 

@@ -1,11 +1,11 @@
 use {
     crate::fatal,
-    tracing::{info, warn},
     serde::{Deserialize, Serialize},
     std::{
         env, fs,
         path::{Path, PathBuf},
     },
+    tracing::{info, warn},
 };
 
 const CONFIG_PATH: &str = "config.toml";
@@ -137,8 +137,8 @@ impl Config {
 
     /// 从文件加载
     pub fn update_from_file(&mut self, path: &str) {
-        let raw_data: Config = toml::from_str(&fs::read_to_string(path).unwrap())
-            .unwrap_or_else(|err| {
+        let raw_data: Config =
+            toml::from_str(&fs::read_to_string(path).unwrap()).unwrap_or_else(|err| {
                 fatal!(("Failed to load config: {}", err), ("{}", err));
             });
         self.center_url = raw_data.center_url;
@@ -168,7 +168,7 @@ fn test_save_and_load_config() {
         "123456789".to_string(),
         Some(true),
         Some(PathBuf::from("cache")),
-        Some(true)
+        Some(true),
     );
     let mut test_config: Config = Config::new(
         None,
@@ -178,7 +178,7 @@ fn test_save_and_load_config() {
         "222".to_string(),
         None,
         None,
-        None
+        None,
     );
     config.save_to_file(tmp_file.to_str().unwrap());
     test_config.update_from_file(tmp_file.to_str().unwrap());

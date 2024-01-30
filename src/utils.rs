@@ -3,10 +3,10 @@ use crate::cluster::SyncFile;
 use std::io::Cursor;
 
 use apache_avro::{from_avro_datum, from_value, types::Value};
-use tracing::{info, warn};
 use md5::{Digest, Md5};
 use sha1::Sha1;
 use std::path::PathBuf;
+use tracing::{info, warn};
 
 /// import {join} from 'path'
 ///
