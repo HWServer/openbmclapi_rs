@@ -1,11 +1,13 @@
 use crate::cluster::SyncFile;
 
 use std::io::Cursor;
+use std::path::PathBuf;
+use std::collections::HashMap;
 
 use apache_avro::{from_avro_datum, from_value, types::Value};
+use base64::Engine;
 use md5::{Digest, Md5};
 use sha1::Sha1;
-use std::path::PathBuf;
 use tracing::{info, warn};
 
 /// import {join} from 'path'
@@ -50,6 +52,34 @@ pub fn validate_file(buffer: &[u8], check_sum: &str) -> bool {
             result_str == check_sum
         }
     }
+}
+
+/// export function checkSign(hash: string, secret: string, query: NodeJS.Dict<string>): boolean {
+///     const {s, e} = query
+///     if (!s || !e) return false
+///     const sha1 = createHash('sha1')
+///     const toSign = [secret, hash, e]
+///     for (const str of toSign) {
+///       sha1.update(str)
+///     }
+///     const sign = sha1.digest('base64url')
+///     return sign === s && Date.now() < parseInt(e, 36)
+/// }
+pub fn check_sign(hash: &str, secret: &str, query: &HashMap<String, String>) -> bool {
+    if !query.contains_key("s") || !query.contains_key("e") {
+        return false;
+    }
+    let s = query.get("s").unwrap();
+    let e = query.get("e").unwrap();
+    let mut hasher = Sha1::new();
+    hasher.update(secret);
+    hasher.update(hash);
+    hasher.update(e);
+    let result = hasher.finalize();
+    let result_str = base64::engine::general_purpose::URL_SAFE.encode(&result);
+    // 1970 年 1 月 1 日 00:00:00 (UTC) 到当前时间的毫秒数。
+    let now = chrono::Utc::now().timestamp_millis();
+    &result_str == s && now < i64::from_str_radix(e, 36).unwrap()
 }
 
 /// BYD avro 格式的文件列表
@@ -111,6 +141,11 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
 /// 此时，展开的宏代码应当是
 ///    error!("error");
 ///    panic!("something wrong");
+/// 如果只传入一个参数
+///    fatal!("error");
+/// 则展开的宏代码应当是
+///    error!("error");
+///    panic!("error");
 
 #[macro_export]
 macro_rules! fatal {

@@ -25,7 +25,6 @@ pub struct Config {
     pub cluster_secret: String,
     /// NO_DEMAON
     pub no_demaon: bool,
-    /// NO OPEN
     /// 同步时是否使用 openbmclapi 还是使用 center 和 sync only
     pub no_open: bool,
     /// cache dir
