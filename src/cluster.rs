@@ -1,10 +1,16 @@
 use crate::config::Config;
+use crate::fatal;
 use crate::utils::avro_data_to_file_list;
 use crate::PROTOCOL_VERSION;
 
-use reqwest::{Client, StatusCode};
+use futures_util::FutureExt;
+use reqwest::{Client as reqClient, StatusCode};
+use rust_socketio::{
+    asynchronous::{Client, ClientBuilder},
+    Payload, TransportType,
+};
 use serde::Deserialize;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 use zstd::stream::decode_all;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -14,16 +20,35 @@ pub struct SyncFile {
     pub size: i64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Cluster {
     pub config: Config,
     pub ua: String,
+    pub socket: Client,
 }
 
 impl Cluster {
-    pub fn new(config: Config) -> Self {
+    pub async fn new(config: Config) -> Self {
+        let disconnect = |reason: Payload, _: Client| {
+            async move {
+                fatal!("socket disconnect: {:?}", reason);
+            }
+            .boxed()
+        };
         let ua = format!("openbmclapi-cluster/{}", PROTOCOL_VERSION);
-        Self { config, ua }
+        let socket = ClientBuilder::new(config.center_url.clone())
+            .transport_type(TransportType::Websocket)
+            .on("error", |err, _| {
+                fatal!("socket error {:?}", err);
+            })
+            .on("message", |msg, _| {
+                async move { debug!("socket message: {:?}", msg) }.boxed()
+            })
+            .on("disconnect", disconnect)
+            .connect()
+            .await
+            .expect("Failed to connect to center");
+        Self { config, ua, socket }
     }
 
     /// ```typescript
@@ -67,7 +92,7 @@ impl Cluster {
         let url = self.config.join_center_url("/openbmclapi/files");
         let password = self.config.cluster_secret.clone();
         let username = self.config.cluster_id.clone();
-        let client = Client::builder()
+        let client = reqClient::builder()
             .user_agent(self.ua.clone())
             .build()
             .unwrap();
@@ -137,7 +162,7 @@ mod tests {
     async fn test_get_file_list() {
         crate::log::init_log_with_cli();
         let config = gen_config();
-        let cluster = Cluster::new(config);
+        let cluster = Cluster::new(config).await;
         cluster.get_file_list().await.unwrap();
     }
 }

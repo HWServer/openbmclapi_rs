@@ -1,8 +1,8 @@
 use crate::cluster::SyncFile;
 
+use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::collections::HashMap;
 
 use apache_avro::{from_avro_datum, from_value, types::Value};
 use base64::Engine;
