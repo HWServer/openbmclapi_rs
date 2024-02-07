@@ -29,6 +29,7 @@ pub struct Cluster {
 
 impl Cluster {
     pub async fn new(config: Config) -> Self {
+
         let disconnect = |reason: Payload, _: Client| {
             async move {
                 fatal!("socket disconnect: {:?}", reason);
@@ -48,7 +49,12 @@ impl Cluster {
             .connect()
             .await
             .expect("Failed to connect to center");
+        info!("websocket connected");
         Self { config, ua, socket }
+    }
+
+    pub async fn disconnect(&self) {
+        self.socket.disconnect().await.expect("Failed to disconnect");
     }
 
     /// ```typescript
@@ -164,5 +170,6 @@ mod tests {
         let config = gen_config();
         let cluster = Cluster::new(config).await;
         cluster.get_file_list().await.unwrap();
+        cluster.disconnect().await;
     }
 }
