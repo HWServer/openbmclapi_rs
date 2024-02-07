@@ -29,7 +29,6 @@ pub struct Cluster {
 
 impl Cluster {
     pub async fn new(config: Config) -> Self {
-
         let disconnect = |reason: Payload, _: Client| {
             async move {
                 fatal!("socket disconnect: {:?}", reason);
@@ -54,7 +53,10 @@ impl Cluster {
     }
 
     pub async fn disconnect(&self) {
-        self.socket.disconnect().await.expect("Failed to disconnect");
+        self.socket
+            .disconnect()
+            .await
+            .expect("Failed to disconnect");
     }
 
     /// ```typescript
