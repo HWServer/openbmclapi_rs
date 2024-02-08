@@ -13,6 +13,8 @@ use serde::Deserialize;
 use tracing::{debug, info, warn};
 use zstd::stream::decode_all;
 
+use std::time::Duration;
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct SyncFile {
     pub path: String,
@@ -36,11 +38,18 @@ impl Cluster {
             .boxed()
         };
         let ua = format!("openbmclapi-cluster/{}", PROTOCOL_VERSION);
-        let socket = ClientBuilder::new(config.center_url.clone())
+
+        // connect_url = f"{center}?clusterId={cluster_id}&clusterSecret={cluster_secret}"
+        let url = format!(
+            "{}?clusterId={}&clusterSecret={}",
+            config.center_url.clone(), config.cluster_id, config.cluster_secret
+        );
+
+        let socket = ClientBuilder::new(url.as_str())
             .transport_type(TransportType::Websocket)
-            .on("error", |err, _| {
-                fatal!("socket error {:?}", err);
-            })
+            .on("error", |err, _| async move {
+                println!("socket error {:?}", err)
+            }.boxed())
             .on("message", |msg, _| {
                 async move { debug!("socket message: {:?}", msg) }.boxed()
             })
@@ -57,6 +66,40 @@ impl Cluster {
             .disconnect()
             .await
             .expect("Failed to disconnect");
+    }
+
+    ///
+    /// public async requestCert(): Promise<void> {
+    ///   const cert = await new Promise<{cert: string; key: string}>((resolve, reject) => {
+    ///     this.socket?.emit('request-cert', ([err, cert]: [unknown, {cert: string; key: string}]) => {
+    ///       if (err) return reject(err)
+    ///       resolve(cert)
+    ///     })
+    ///   })
+    ///   await fse.outputFile(join(this.tmpDir, 'cert.pem'), cert.cert)
+    ///   await fse.outputFile(join(this.tmpDir, 'key.pem'), cert.key)
+    /// }
+    pub async fn request_cert(&self) {
+        let ack_callback = |message: Payload, _| {
+            async move {
+                println!("ack_callback: {:?}", message);
+                match message {
+                    Payload::Text(values) => info!("{:#?}", values),
+                    Payload::Binary(bytes) => info!("Received bytes: {:#?}", bytes),
+                    _ => (),
+                }
+            }
+            .boxed()
+        };
+        let res = self
+            .socket
+            .emit_with_ack("request-cert", "", Duration::from_secs(10), ack_callback)
+            .await;
+        info!("request_cert res: {:?}", res);
+        tokio::time::sleep(Duration::from_secs(20)).await;
+        if res.is_err() {
+            warn!("request cert error: {:?}", res.err());
+        }
     }
 
     /// ```typescript
@@ -172,6 +215,17 @@ mod tests {
         let config = gen_config();
         let cluster = Cluster::new(config).await;
         cluster.get_file_list().await.unwrap();
+        cluster.disconnect().await;
+        std::thread::sleep(std::time::Duration::from_secs(10));
+    }
+
+    #[cfg(feature = "local_test")]
+    #[tokio::test]
+    async fn test_get_cert() {
+        crate::log::init_log_with_cli();
+        let config = gen_config();
+        let cluster = Cluster::new(config).await;
+        cluster.request_cert().await;
         cluster.disconnect().await;
     }
 }

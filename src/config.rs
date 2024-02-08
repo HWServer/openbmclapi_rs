@@ -62,8 +62,6 @@ impl Config {
         }
     }
 
-    pub fn raw_new() {}
-
     pub fn convert_from_env() {
         // Load from env
         let center_url = env::var("CENTER_URL").ok();

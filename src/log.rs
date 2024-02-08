@@ -5,5 +5,7 @@ pub fn init_log_with_cli() {
     // --trace
     // 从低级开始判断
 
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
 }
