@@ -1,6 +1,12 @@
-use rust_socketio::{Payload, RawClient};
+use rust_socketio::{Payload, RawClient, Event};
 
 fn main() {
+
+    
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
+
     // 从命令行读取配置文件路径
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
@@ -19,17 +25,13 @@ fn main() {
     );
 
     let socket = rust_socketio::ClientBuilder::new(url)
-        .on("connect", |args, _| {
-            println!("Connected: {:?}", args);
+    .transport_type(rust_socketio::TransportType::Websocket)
+        .on_any(|event: Event, payload: Payload, _: RawClient| {
+            println!("Received event: {:?} with payload: {:?}", event, payload);
         })
-        .on("event", |args, _| {
-            println!("Event: {:?}", args);
-        })
-        .on("disconnect", |args, _| {
-            println!("Disconnected: {:?}", args);
-        })
-        .on("error", |args, _| {
-            println!("Error!!: {:?}", args);
+        .on("error", |err, _: RawClient| {
+            println!("Received error: {:?}", err);
+            // panic!("Error received from server {:?}", err);
         })
         .connect()
         .unwrap();
@@ -46,7 +48,9 @@ fn main() {
         std::time::Duration::from_secs(10),
         request_callback,
     );
-    println!("Request result: {:?}", res);
+
+    let empty: Vec<u8> = vec![];
+    socket.emit("request-cert", Payload::from(empty)).unwrap();
 
     std::thread::sleep(std::time::Duration::from_secs(20));
 }
