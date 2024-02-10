@@ -80,12 +80,16 @@ impl Cluster {
     ///   await fse.outputFile(join(this.tmpDir, 'key.pem'), cert.key)
     /// }
     pub async fn request_cert(&self) {
+        tokio::time::sleep(Duration::from_millis(200)).await;
         let ack_callback = |message: Payload, _| {
             async move {
-                println!("ack_callback: {:?}", message);
                 match message {
-                    Payload::Text(values) => info!("{:#?}", values),
-                    Payload::Binary(bytes) => info!("Received bytes: {:#?}", bytes),
+                    Payload::Text(values) => {
+                        let data = &values[0][0][1];
+                        let cert = &data["cert"];
+                        let key = &data["key"];
+                        info!("cert: {}, key: {}", cert, key);
+                    },
                     _ => (),
                 }
             }
@@ -96,7 +100,7 @@ impl Cluster {
             .emit_with_ack("request-cert", "", Duration::from_secs(10), ack_callback)
             .await;
         info!("request_cert res: {:?}", res);
-        tokio::time::sleep(Duration::from_secs(20)).await;
+        tokio::time::sleep(Duration::from_secs(5)).await;
         if res.is_err() {
             warn!("request cert error: {:?}", res.err());
         }

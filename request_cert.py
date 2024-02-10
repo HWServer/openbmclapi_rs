@@ -34,7 +34,8 @@ if __name__ == "__main__":
         if (err) return reject(err)
         resolve(cert)
       })
-    })"""
+    })
+    """
     # sio.emit("request-cert",)
     sio.emit("request-cert", callback=lambda *args: print(args))
 

@@ -1,10 +1,10 @@
 use rust_socketio::{Payload, RawClient, Event};
+use tracing::info;
 
 fn main() {
 
-    
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .init();
 
     // 从命令行读取配置文件路径
@@ -21,7 +21,7 @@ fn main() {
     let center_url = "https://openbmclapi.bangbang93.com";
     let url = format!(
         "{}?clusterId={}&clusterSecret={}",
-        center_url, config["cluster_id"], config["cluster_secret"]
+        center_url, config["cluster_id"].as_str().unwrap(), config["cluster_secret"].as_str().unwrap()
     );
 
     let socket = rust_socketio::ClientBuilder::new(url)
@@ -37,8 +37,14 @@ fn main() {
         .unwrap();
 
     println!("Connected to server");
+    std::thread::sleep(std::time::Duration::from_secs(2));
     let request_callback = |message: Payload, _: RawClient| {
-        println!("Received message: {:?}", message);
+        match message {
+            Payload::Text(datas) => {
+                info!("Received certs: {:#?}", datas[0][0][1]);
+            },
+            _ => ()
+        }
     };
 
     println!("Requesting cert");
@@ -48,6 +54,7 @@ fn main() {
         std::time::Duration::from_secs(10),
         request_callback,
     );
+    println!("Emit result: {:?}", res);
 
     let empty: Vec<u8> = vec![];
     socket.emit("request-cert", Payload::from(empty)).unwrap();
