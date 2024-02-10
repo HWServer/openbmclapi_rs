@@ -79,16 +79,25 @@ impl Cluster {
     ///   await fse.outputFile(join(this.tmpDir, 'cert.pem'), cert.cert)
     ///   await fse.outputFile(join(this.tmpDir, 'key.pem'), cert.key)
     /// }
-    pub async fn request_cert(&self) {
+    pub async fn request_cert(&self) -> bool {
         tokio::time::sleep(Duration::from_millis(200)).await;
+        let tmp_dir = self.config.cache_dir.clone();
         let ack_callback = |message: Payload, _| {
             async move {
                 match message {
                     Payload::Text(values) => {
+                        if values.is_empty() {
+                            return;
+                        }
+                        if !values[0].is_array() || values[0].as_array().unwrap()[0].is_array(){
+                            return;
+                        }
                         let data = &values[0][0][1];
                         let cert = &data["cert"];
                         let key = &data["key"];
-                        info!("cert: {}, key: {}", cert, key);
+                        let cert_file = tmp_dir.clone().join("cert.pem");
+                        let key_file = tmp_dir.clone().join("key.pem");
+
                     },
                     _ => (),
                 }
@@ -99,10 +108,12 @@ impl Cluster {
             .socket
             .emit_with_ack("request-cert", "", Duration::from_secs(10), ack_callback)
             .await;
-        info!("request_cert res: {:?}", res);
         tokio::time::sleep(Duration::from_secs(5)).await;
         if res.is_err() {
             warn!("request cert error: {:?}", res.err());
+            false
+        } else {
+            true
         }
     }
 
@@ -221,6 +232,7 @@ mod tests {
         cluster.get_file_list().await.unwrap();
         cluster.disconnect().await;
         std::thread::sleep(std::time::Duration::from_secs(10));
+        ()
     }
 
     #[cfg(feature = "local_test")]
@@ -231,5 +243,6 @@ mod tests {
         let cluster = Cluster::new(config).await;
         cluster.request_cert().await;
         cluster.disconnect().await;
+        ()
     }
 }
