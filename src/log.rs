@@ -8,7 +8,7 @@ pub fn init_log_with_cli() {
     // 从低级开始判断
 
     let trace = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .with_line_number(true)
         .try_init();
     if trace.is_err() {
