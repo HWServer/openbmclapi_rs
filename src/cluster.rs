@@ -82,7 +82,8 @@ impl Cluster {
     pub async fn request_cert(&self) -> bool {
         tokio::time::sleep(Duration::from_millis(200)).await;
         let tmp_dir = self.config.cache_dir.clone();
-        let ack_callback = |message: Payload, _| {
+        let ack_callback = move |message: Payload, _| {
+            let tmp_dir = tmp_dir.clone();
             async move {
                 match message {
                     Payload::Text(values) => {
