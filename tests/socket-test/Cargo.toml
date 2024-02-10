@@ -15,6 +15,3 @@ toml = "0.8.8"
 
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["time"] }
-
-[patch.crates-io]
-rust_socketio = { git = "https://github.com/shenjackyuanjie/rust-socketio.git", branch = "mult_payload" }
