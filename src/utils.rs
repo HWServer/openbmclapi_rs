@@ -8,6 +8,7 @@ use apache_avro::{from_avro_datum, from_value, types::Value};
 use base64::Engine;
 use md5::{Digest, Md5};
 use sha1::Sha1;
+use tokio::io::AsyncWriteExt;
 use tracing::{info, warn};
 
 /// import {join} from 'path'
@@ -132,6 +133,17 @@ pub fn avro_data_to_file_list(data: Vec<u8>) -> Option<Vec<SyncFile>> {
     }
 }
 
+pub async fn safe_write_file(path: &PathBuf, data: &[u8]) -> Result<(), std::io::Error> {
+    let mut file = tokio::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(path)
+        .await?;
+    file.write_all(data).await?;
+    file.sync_all().await?;
+    Ok(())
+}
+
 /// FATAL 级 Log
 /// 这个宏会输出一条 error 级的日志, 并且 panic!
 /// 这个宏应当接收两个参数, 分别定义为 arg1 和 arg2, 其应当均为 String 类型
@@ -183,4 +195,16 @@ fn test_validate_file() {
         validate_file(b"hello", "5d41402abc4b2a76b9719d911017c593"),
         false
     );
+}
+
+#[test]
+fn test_check_sign() {
+    let mut query = HashMap::new();
+    // 使用 21000101 00:00:00 UTC+8 作为日期
+    let long_long_after = 4102416000_i64;
+    query.insert("s".to_string(), "QiMQm3c-nXiUKu0Cmmp14hXnVk0=".to_string());
+    query.insert("e".to_string(), long_long_after.to_string());
+    let secret = "abcd";
+    let hash = "1234567890abcdef";
+    assert!(check_sign(hash, secret, &query));
 }

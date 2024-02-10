@@ -68,7 +68,6 @@ impl Cluster {
             .expect("Failed to disconnect");
     }
 
-    ///
     /// public async requestCert(): Promise<void> {
     ///   const cert = await new Promise<{cert: string; key: string}>((resolve, reject) => {
     ///     this.socket?.emit('request-cert', ([err, cert]: [unknown, {cert: string; key: string}]) => {
@@ -98,6 +97,27 @@ impl Cluster {
                         let key = &data["key"];
                         let cert_file = tmp_dir.clone().join("cert.pem");
                         let key_file = tmp_dir.clone().join("key.pem");
+                        if cert_file.exists() {
+                            if tokio::fs::remove_file(cert_file.clone()).await.is_err() {
+                                warn!("remove cert file error");
+                            }
+                            
+                        } else {
+                            if let Some(parent) = cert_file.parent() {
+                                if !parent.exists() {
+                                    if tokio::fs::create_dir_all(parent).await.is_err() {
+                                        warn!("create cert file parent dir error");
+                                    }
+                                }
+                            }
+                        }
+                        if key_file.exists() {
+                            if tokio::fs::remove_file(key_file.clone()).await.is_err() {
+                                warn!("remove key file error");
+                            }
+                        }
+
+                        
 
                     },
                     _ => (),
